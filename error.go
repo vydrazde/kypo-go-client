@@ -1,4 +1,4 @@
-package KYPOClient
+package kypo_go_client
 
 import (
 	"fmt"
