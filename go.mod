@@ -1,4 +1,4 @@
-module kypo-go-client
+module github.com/vydrazde/kypo-go-client
 
 go 1.18
 

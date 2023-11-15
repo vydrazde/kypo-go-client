@@ -1,6 +1,6 @@
 package main
 
-import "kypo-go-client"
+import "github.com/vydrazde/kypo-go-client"
 
 func main() {
 	client, _ := kypo_go_client.NewClient("https://images.crp.kypo.muni.cz", "bzhwmbxgyxALbAdMjYOgpolQzkiQHGwWRXxm", "kypo-admin", "UfMLMlEw0751kia002Kbv9MaLNlo3T")
