@@ -1,4 +1,4 @@
-package kypo_go_client
+package kypo
 
 import (
 	"encoding/json"
