@@ -1,6 +1,7 @@
 package kypo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,8 +14,8 @@ type TrainingDefinitionAdaptive struct {
 	Content string `json:"content" tfsdk:"content"`
 }
 
-func (c *Client) GetTrainingDefinitionAdaptive(definitionID int64) (*TrainingDefinitionAdaptive, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/kypo-adaptive-training/api/v1/exports/training-definitions/%d", c.Endpoint, definitionID), nil)
+func (c *Client) GetTrainingDefinitionAdaptive(ctx context.Context, definitionID int64) (*TrainingDefinitionAdaptive, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/kypo-adaptive-training/api/v1/exports/training-definitions/%d", c.Endpoint, definitionID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -41,8 +42,8 @@ func (c *Client) GetTrainingDefinitionAdaptive(definitionID int64) (*TrainingDef
 	return &definition, nil
 }
 
-func (c *Client) CreateTrainingDefinitionAdaptive(content string) (*TrainingDefinitionAdaptive, error) {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/kypo-adaptive-training/api/v1/imports/training-definitions", c.Endpoint), strings.NewReader(content))
+func (c *Client) CreateTrainingDefinitionAdaptive(ctx context.Context, content string) (*TrainingDefinitionAdaptive, error) {
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/kypo-adaptive-training/api/v1/imports/training-definitions", c.Endpoint), strings.NewReader(content))
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +74,8 @@ func (c *Client) CreateTrainingDefinitionAdaptive(content string) (*TrainingDefi
 	return &definition, nil
 }
 
-func (c *Client) DeleteTrainingDefinitionAdaptive(definitionID int64) error {
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/kypo-adaptive-training/api/v1/training-definitions/%d", c.Endpoint, definitionID), nil)
+func (c *Client) DeleteTrainingDefinitionAdaptive(ctx context.Context, definitionID int64) error {
+	req, err := http.NewRequestWithContext(ctx, "DELETE", fmt.Sprintf("%s/kypo-adaptive-training/api/v1/training-definitions/%d", c.Endpoint, definitionID), nil)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package kypo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -34,8 +35,8 @@ type HardwareUsage struct {
 	Port      string `json:"port" tfsdk:"port"`
 }
 
-func (c *Client) GetSandboxPool(poolId int64) (*SandboxPool, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d", c.Endpoint, poolId), nil)
+func (c *Client) GetSandboxPool(ctx context.Context, poolId int64) (*SandboxPool, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d", c.Endpoint, poolId), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -63,13 +64,13 @@ func (c *Client) GetSandboxPool(poolId int64) (*SandboxPool, error) {
 	return &pool, nil
 }
 
-func (c *Client) CreateSandboxPool(definitionId, maxSize int64) (*SandboxPool, error) {
+func (c *Client) CreateSandboxPool(ctx context.Context, definitionId, maxSize int64) (*SandboxPool, error) {
 	requestBody, err := json.Marshal(SandboxPoolRequest{definitionId, maxSize})
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools", c.Endpoint), strings.NewReader(string(requestBody)))
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools", c.Endpoint), strings.NewReader(string(requestBody)))
 	if err != nil {
 		return nil, err
 	}
@@ -92,8 +93,8 @@ func (c *Client) CreateSandboxPool(definitionId, maxSize int64) (*SandboxPool, e
 	return &pool, nil
 }
 
-func (c *Client) DeleteSandboxPool(poolId int64) error {
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d", c.Endpoint, poolId), nil)
+func (c *Client) DeleteSandboxPool(ctx context.Context, poolId int64) error {
+	req, err := http.NewRequestWithContext(ctx, "DELETE", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d", c.Endpoint, poolId), nil)
 	if err != nil {
 		return err
 	}
@@ -110,8 +111,8 @@ func (c *Client) DeleteSandboxPool(poolId int64) error {
 	return nil
 }
 
-func (c *Client) CleanupSandboxPool(poolId int64, force bool) error {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d/cleanup-requests?force=%s",
+func (c *Client) CleanupSandboxPool(ctx context.Context, poolId int64, force bool) error {
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d/cleanup-requests?force=%s",
 		c.Endpoint, poolId, boolToString(force)), nil)
 	if err != nil {
 		return err
