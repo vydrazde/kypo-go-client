@@ -15,7 +15,7 @@ type UserModel struct {
 }
 
 func (c *Client) doRequest(req *http.Request) ([]byte, int, error) {
-	err := c.refreshToken()
+	err := c.refreshToken(req.Context())
 	if err != nil {
 		return nil, 0, err
 	}

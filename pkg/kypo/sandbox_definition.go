@@ -1,6 +1,7 @@
 package kypo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,8 +22,8 @@ type SandboxDefinitionRequest struct {
 	Rev string `json:"rev"`
 }
 
-func (c *Client) GetSandboxDefinition(definitionID int64) (*SandboxDefinition, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/definitions/%d", c.Endpoint, definitionID), nil)
+func (c *Client) GetSandboxDefinition(ctx context.Context, definitionID int64) (*SandboxDefinition, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/definitions/%d", c.Endpoint, definitionID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -50,13 +51,13 @@ func (c *Client) GetSandboxDefinition(definitionID int64) (*SandboxDefinition, e
 	return &definition, nil
 }
 
-func (c *Client) CreateSandboxDefinition(url, rev string) (*SandboxDefinition, error) {
+func (c *Client) CreateSandboxDefinition(ctx context.Context, url, rev string) (*SandboxDefinition, error) {
 	requestBody, err := json.Marshal(SandboxDefinitionRequest{url, rev})
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/definitions", c.Endpoint), strings.NewReader(string(requestBody)))
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/definitions", c.Endpoint), strings.NewReader(string(requestBody)))
 	if err != nil {
 		return nil, err
 	}
@@ -79,8 +80,8 @@ func (c *Client) CreateSandboxDefinition(url, rev string) (*SandboxDefinition, e
 	return &definition, nil
 }
 
-func (c *Client) DeleteSandboxDefinition(definitionID int64) error {
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/definitions/%d", c.Endpoint, definitionID), nil)
+func (c *Client) DeleteSandboxDefinition(ctx context.Context, definitionID int64) error {
+	req, err := http.NewRequestWithContext(ctx, "DELETE", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/definitions/%d", c.Endpoint, definitionID), nil)
 	if err != nil {
 		return err
 	}

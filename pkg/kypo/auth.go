@@ -1,6 +1,7 @@
 package kypo
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -169,14 +170,14 @@ func (c *Client) authorizeFirstTime(httpClient http.Client, csrf string) (string
 	return token, err
 }
 
-func (c *Client) authenticateKeycloak() error {
+func (c *Client) authenticateKeycloak(ctx context.Context) error {
 	query := url.Values{}
 	query.Add("username", c.Username)
 	query.Add("password", c.Password)
 	query.Add("client_id", c.ClientID)
 	query.Add("grant_type", "password")
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/keycloak/realms/KYPO/protocol/openid-connect/token",
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/keycloak/realms/KYPO/protocol/openid-connect/token",
 		c.Endpoint), strings.NewReader(query.Encode()))
 	if err != nil {
 		return err
@@ -216,7 +217,7 @@ func (c *Client) authenticateKeycloak() error {
 }
 
 func (c *Client) authenticate() error {
-	err := c.authenticateKeycloak()
+	err := c.authenticateKeycloak(context.Background())
 	var errNotFound *ErrNotFound
 	if errors.As(err, &errNotFound) {
 		var token string
@@ -234,9 +235,9 @@ func (c *Client) authenticate() error {
 	return nil
 }
 
-func (c *Client) refreshToken() error {
+func (c *Client) refreshToken(ctx context.Context) error {
 	if !c.TokenExpiryTime.IsZero() && time.Now().Add(10*time.Second).After(c.TokenExpiryTime) {
-		return c.authenticateKeycloak()
+		return c.authenticateKeycloak(ctx)
 	}
 	return nil
 }
