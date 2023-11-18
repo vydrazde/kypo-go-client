@@ -103,7 +103,7 @@ func (c *Client) CreateSandboxAllocationUnits(ctx context.Context, poolId, count
 	return allocationUnit, nil
 }
 
-func (c *Client) CreateSandboxAllocationUnitAwait(ctx context.Context, poolId int64) (*SandboxAllocationUnit, error) {
+func (c *Client) CreateSandboxAllocationUnitAwait(ctx context.Context, poolId int64, pollTime time.Duration) (*SandboxAllocationUnit, error) {
 	units, err := c.CreateSandboxAllocationUnits(ctx, poolId, 1)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (c *Client) CreateSandboxAllocationUnitAwait(ctx context.Context, poolId in
 		return nil, fmt.Errorf("expected one allocation unit to be created, got %d instead", len(units))
 	}
 	unit := units[0]
-	request, err := c.PollRequestFinished(ctx, unit.Id, 5*time.Second, "allocation")
+	request, err := c.PollRequestFinished(ctx, unit.Id, pollTime, "allocation")
 	if err != nil {
 		return nil, err
 	}
@@ -186,13 +186,13 @@ func (c *Client) PollRequestFinished(ctx context.Context, unitId int64, pollTime
 	}
 }
 
-func (c *Client) CreateSandboxCleanupRequestAwait(ctx context.Context, unitId int64) error {
+func (c *Client) CreateSandboxCleanupRequestAwait(ctx context.Context, unitId int64, pollTime time.Duration) error {
 	_, err := c.CreateSandboxCleanupRequest(ctx, unitId)
 	if err != nil {
 		return err
 	}
 
-	cleanupRequest, err := c.PollRequestFinished(ctx, unitId, 3*time.Second, "cleanup")
+	cleanupRequest, err := c.PollRequestFinished(ctx, unitId, pollTime, "cleanup")
 	// After cleanup is finished it deletes itself and 404 is thrown
 	if _, ok := err.(*ErrNotFound); ok {
 		return nil
