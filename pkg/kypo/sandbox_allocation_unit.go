@@ -1,6 +1,7 @@
 package kypo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -49,8 +50,8 @@ type outputLine struct {
 	Content string `json:"content"`
 }
 
-func (c *Client) GetSandboxAllocationUnit(unitId int64) (*SandboxAllocationUnit, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/sandbox-allocation-units/%d", c.Endpoint, unitId), nil)
+func (c *Client) GetSandboxAllocationUnit(ctx context.Context, unitId int64) (*SandboxAllocationUnit, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/sandbox-allocation-units/%d", c.Endpoint, unitId), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +79,8 @@ func (c *Client) GetSandboxAllocationUnit(unitId int64) (*SandboxAllocationUnit,
 	return &allocationUnit, nil
 }
 
-func (c *Client) CreateSandboxAllocationUnits(poolId, count int64) ([]SandboxAllocationUnit, error) {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d/sandbox-allocation-units?count=%d", c.Endpoint, poolId, count), nil)
+func (c *Client) CreateSandboxAllocationUnits(ctx context.Context, poolId, count int64) ([]SandboxAllocationUnit, error) {
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d/sandbox-allocation-units?count=%d", c.Endpoint, poolId, count), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +103,8 @@ func (c *Client) CreateSandboxAllocationUnits(poolId, count int64) ([]SandboxAll
 	return allocationUnit, nil
 }
 
-func (c *Client) CreateSandboxAllocationUnitAwait(poolId int64) (*SandboxAllocationUnit, error) {
-	units, err := c.CreateSandboxAllocationUnits(poolId, 1)
+func (c *Client) CreateSandboxAllocationUnitAwait(ctx context.Context, poolId int64) (*SandboxAllocationUnit, error) {
+	units, err := c.CreateSandboxAllocationUnits(ctx, poolId, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -111,28 +112,16 @@ func (c *Client) CreateSandboxAllocationUnitAwait(poolId int64) (*SandboxAllocat
 		return nil, fmt.Errorf("expected one allocation unit to be created, got %d instead", len(units))
 	}
 	unit := units[0]
-	request, err := c.PollRequestFinished(unit.Id, 5*time.Second, "allocation")
+	request, err := c.PollRequestFinished(ctx, unit.Id, 5*time.Second, "allocation")
+	if err != nil {
+		return nil, err
+	}
 	unit.AllocationRequest = *request
 	return &unit, err
 }
 
-func (c *Client) CreateSandboxAllocationUnitAwaitTimeout(poolId int64, timeout time.Duration) (*SandboxAllocationUnit, error) {
-	resultChannel := make(chan valueOrError[*SandboxAllocationUnit], 1)
-	go func() {
-		res, err := c.CreateSandboxAllocationUnitAwait(poolId)
-		resultChannel <- valueOrError[*SandboxAllocationUnit]{err: err, value: res}
-	}()
-
-	select {
-	case result := <-resultChannel:
-		return result.value, result.err
-	case <-time.After(timeout):
-		return nil, &ErrTimeout{Action: "creating sandbox allocation unit", Identifier: strconv.FormatInt(poolId, 10), Timeout: timeout}
-	}
-}
-
-func (c *Client) CreateSandboxCleanupRequest(unitId int64) (*SandboxRequest, error) {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/sandbox-allocation-units/%d/cleanup-request", c.Endpoint, unitId), nil)
+func (c *Client) CreateSandboxCleanupRequest(ctx context.Context, unitId int64) (*SandboxRequest, error) {
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/sandbox-allocation-units/%d/cleanup-request", c.Endpoint, unitId), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -159,47 +148,51 @@ func (c *Client) CreateSandboxCleanupRequest(unitId int64) (*SandboxRequest, err
 	return &sandboxRequest, nil
 }
 
-func (c *Client) PollRequestFinished(unitId int64, pollTime time.Duration, requestType string) (*SandboxRequest, error) {
+func (c *Client) PollRequestFinished(ctx context.Context, unitId int64, pollTime time.Duration, requestType string) (*SandboxRequest, error) {
 	ticker := time.NewTicker(pollTime)
-	for range ticker.C {
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/sandbox-allocation-units/%d/%s-request", c.Endpoint, unitId, requestType), nil)
-		if err != nil {
-			return nil, err
-		}
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-ticker.C:
+			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/sandbox-allocation-units/%d/%s-request", c.Endpoint, unitId, requestType), nil)
+			if err != nil {
+				return nil, err
+			}
 
-		body, status, err := c.doRequest(req)
-		if err != nil {
-			return nil, err
-		}
+			body, status, err := c.doRequest(req)
+			if err != nil {
+				return nil, err
+			}
 
-		if status == http.StatusNotFound {
-			return nil, &ErrNotFound{ResourceName: "sandbox request", Identifier: strconv.FormatInt(unitId, 10)}
+			if status == http.StatusNotFound {
+				return nil, &ErrNotFound{ResourceName: "sandbox request", Identifier: strconv.FormatInt(unitId, 10)}
+			}
 
-		}
+			if status != http.StatusOK {
+				return nil, fmt.Errorf("status: %d, body: %s", status, body)
+			}
+			sandboxRequest := SandboxRequest{}
+			err = json.Unmarshal(body, &sandboxRequest)
+			if err != nil {
+				return nil, err
+			}
 
-		if status != http.StatusOK {
-			return nil, fmt.Errorf("status: %d, body: %s", status, body)
-		}
-		sandboxRequest := SandboxRequest{}
-		err = json.Unmarshal(body, &sandboxRequest)
-		if err != nil {
-			return nil, err
-		}
-
-		if !slices.Contains(sandboxRequest.Stages, "RUNNING") && !slices.Contains(sandboxRequest.Stages, "IN_QUEUE") {
-			return &sandboxRequest, nil
+			if !slices.Contains(sandboxRequest.Stages, "RUNNING") && !slices.Contains(sandboxRequest.Stages, "IN_QUEUE") {
+				return &sandboxRequest, nil
+			}
 		}
 	}
-	return nil, nil // Unreachable
 }
 
-func (c *Client) CreateSandboxCleanupRequestAwait(unitId int64) error {
-	_, err := c.CreateSandboxCleanupRequest(unitId)
+func (c *Client) CreateSandboxCleanupRequestAwait(ctx context.Context, unitId int64) error {
+	_, err := c.CreateSandboxCleanupRequest(ctx, unitId)
 	if err != nil {
 		return err
 	}
 
-	cleanupRequest, err := c.PollRequestFinished(unitId, 3*time.Second, "cleanup")
+	cleanupRequest, err := c.PollRequestFinished(ctx, unitId, 3*time.Second, "cleanup")
 	// After cleanup is finished it deletes itself and 404 is thrown
 	if _, ok := err.(*ErrNotFound); ok {
 		return nil
@@ -210,22 +203,8 @@ func (c *Client) CreateSandboxCleanupRequestAwait(unitId int64) error {
 	return err
 }
 
-func (c *Client) CreateSandboxCleanupRequestAwaitTimeout(unitId int64, timeout time.Duration) error {
-	resultChannel := make(chan error, 1)
-	go func() {
-		resultChannel <- c.CreateSandboxCleanupRequestAwait(unitId)
-	}()
-
-	select {
-	case result := <-resultChannel:
-		return result
-	case <-time.After(timeout):
-		return &ErrTimeout{Action: "deleting sandbox allocation unit", Identifier: strconv.FormatInt(unitId, 10), Timeout: timeout}
-	}
-}
-
-func (c *Client) CancelSandboxAllocationRequest(allocationRequestId int64) error {
-	req, err := http.NewRequest("PATCH", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/allocation-requests/%d/cancel", c.Endpoint, allocationRequestId), nil)
+func (c *Client) CancelSandboxAllocationRequest(ctx context.Context, allocationRequestId int64) error {
+	req, err := http.NewRequestWithContext(ctx, "PATCH", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/allocation-requests/%d/cancel", c.Endpoint, allocationRequestId), nil)
 	if err != nil {
 		return err
 	}
@@ -246,12 +225,12 @@ func (c *Client) CancelSandboxAllocationRequest(allocationRequestId int64) error
 	return nil
 }
 
-func (c *Client) GetSandboxRequestAnsibleOutputs(sandboxRequestId, page, pageSize int64, outputType string) (*SandboxRequestStageOutput, error) {
+func (c *Client) GetSandboxRequestAnsibleOutputs(ctx context.Context, sandboxRequestId, page, pageSize int64, outputType string) (*SandboxRequestStageOutput, error) {
 	query := url.Values{}
 	query.Add("page", strconv.FormatInt(page, 10))
 	query.Add("page_size", strconv.FormatInt(pageSize, 10))
 
-	req, err := http.NewRequest("GET", fmt.Sprintf(
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf(
 		"%s/kypo-sandbox-service/api/v1/allocation-requests/%d/stages/%s/outputs?%s", c.Endpoint, sandboxRequestId, outputType, query.Encode()), nil)
 	if err != nil {
 		return nil, err
