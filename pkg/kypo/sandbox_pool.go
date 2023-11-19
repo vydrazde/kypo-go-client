@@ -35,6 +35,7 @@ type HardwareUsage struct {
 	Port      string `json:"port" tfsdk:"port"`
 }
 
+// GetSandboxPool reads the given sandbox pool.
 func (c *Client) GetSandboxPool(ctx context.Context, poolId int64) (*SandboxPool, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d", c.Endpoint, poolId), nil)
 	if err != nil {
@@ -64,6 +65,7 @@ func (c *Client) GetSandboxPool(ctx context.Context, poolId int64) (*SandboxPool
 	return &pool, nil
 }
 
+// CreateSandboxPool creates a sandbox pool from given sandbox definition id and the maximum size of the pool.
 func (c *Client) CreateSandboxPool(ctx context.Context, definitionId, maxSize int64) (*SandboxPool, error) {
 	requestBody, err := json.Marshal(SandboxPoolRequest{definitionId, maxSize})
 	if err != nil {
@@ -93,6 +95,7 @@ func (c *Client) CreateSandboxPool(ctx context.Context, definitionId, maxSize in
 	return &pool, nil
 }
 
+// DeleteSandboxPool deletes the given sandbox pool.
 func (c *Client) DeleteSandboxPool(ctx context.Context, poolId int64) error {
 	req, err := http.NewRequestWithContext(ctx, "DELETE", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d", c.Endpoint, poolId), nil)
 	if err != nil {
@@ -111,6 +114,7 @@ func (c *Client) DeleteSandboxPool(ctx context.Context, poolId int64) error {
 	return nil
 }
 
+// CleanupSandboxPool creates a cleanup request for all allocation units in the pool.
 func (c *Client) CleanupSandboxPool(ctx context.Context, poolId int64, force bool) error {
 	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d/cleanup-requests?force=%s",
 		c.Endpoint, poolId, boolToString(force)), nil)

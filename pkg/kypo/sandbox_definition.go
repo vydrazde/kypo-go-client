@@ -22,6 +22,7 @@ type SandboxDefinitionRequest struct {
 	Rev string `json:"rev"`
 }
 
+// GetSandboxDefinition reads the given sandbox definition.
 func (c *Client) GetSandboxDefinition(ctx context.Context, definitionID int64) (*SandboxDefinition, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/definitions/%d", c.Endpoint, definitionID), nil)
 	if err != nil {
@@ -51,6 +52,9 @@ func (c *Client) GetSandboxDefinition(ctx context.Context, definitionID int64) (
 	return &definition, nil
 }
 
+// CreateSandboxDefinition creates a sandbox definition.
+// The `url` must be a URL to a GitLab repository where the sandbox definition is hosted.
+// The `rev` specifies the Git revision to be used.
 func (c *Client) CreateSandboxDefinition(ctx context.Context, url, rev string) (*SandboxDefinition, error) {
 	requestBody, err := json.Marshal(SandboxDefinitionRequest{url, rev})
 	if err != nil {
@@ -80,6 +84,7 @@ func (c *Client) CreateSandboxDefinition(ctx context.Context, url, rev string) (
 	return &definition, nil
 }
 
+// DeleteSandboxDefinition deletes the given sandbox definition.
 func (c *Client) DeleteSandboxDefinition(ctx context.Context, definitionID int64) error {
 	req, err := http.NewRequestWithContext(ctx, "DELETE", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/definitions/%d", c.Endpoint, definitionID), nil)
 	if err != nil {
