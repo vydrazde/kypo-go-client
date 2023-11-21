@@ -189,7 +189,7 @@ func (c *Client) authenticateKeycloak(ctx context.Context) error {
 		return err
 	}
 	if res.StatusCode == http.StatusNotFound || res.StatusCode == http.StatusMethodNotAllowed {
-		return &ErrNotFound{ResourceName: "KYPO Keycloak endpoint"}
+		return &Error{ResourceName: "KYPO Keycloak endpoint", Err: ErrNotFound}
 	}
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("authenticateKeycloak failed, got HTTP code: %d", res.StatusCode)
@@ -218,8 +218,7 @@ func (c *Client) authenticateKeycloak(ctx context.Context) error {
 
 func (c *Client) authenticate() error {
 	err := c.authenticateKeycloak(context.Background())
-	var errNotFound *ErrNotFound
-	if errors.As(err, &errNotFound) {
+	if errors.Is(err, ErrNotFound) {
 		var token string
 		token, err = c.signIn()
 		if err != nil {

@@ -3,6 +3,7 @@ package kypo
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -65,7 +66,7 @@ func (c *Client) GetSandboxAllocationUnit(ctx context.Context, unitId int64) (*S
 	allocationUnit := SandboxAllocationUnit{}
 
 	if status == http.StatusNotFound {
-		return nil, &ErrNotFound{ResourceName: "sandbox allocation unit", Identifier: strconv.FormatInt(unitId, 10)}
+		return nil, &Error{ResourceName: "sandbox allocation unit", Identifier: unitId, Err: ErrNotFound}
 	}
 
 	if status != http.StatusOK {
@@ -137,7 +138,7 @@ func (c *Client) CreateSandboxCleanupRequest(ctx context.Context, unitId int64) 
 	}
 
 	if status == http.StatusNotFound {
-		return nil, &ErrNotFound{ResourceName: "sandbox allocation unit", Identifier: strconv.FormatInt(unitId, 10)}
+		return nil, &Error{ResourceName: "sandbox allocation unit", Identifier: unitId, Err: ErrNotFound}
 	}
 
 	if status != http.StatusCreated {
@@ -174,7 +175,7 @@ func (c *Client) PollRequestFinished(ctx context.Context, unitId int64, pollTime
 			}
 
 			if status == http.StatusNotFound {
-				return nil, &ErrNotFound{ResourceName: "sandbox request", Identifier: strconv.FormatInt(unitId, 10)}
+				return nil, &Error{ResourceName: "sandbox request", Identifier: unitId, Err: ErrNotFound}
 			}
 
 			if status != http.StatusOK {
@@ -203,7 +204,7 @@ func (c *Client) CreateSandboxCleanupRequestAwait(ctx context.Context, unitId in
 
 	cleanupRequest, err := c.PollRequestFinished(ctx, unitId, pollTime, "cleanup")
 	// After cleanup is finished it deletes itself and 404 is thrown
-	if _, ok := err.(*ErrNotFound); ok {
+	if errors.Is(err, ErrNotFound) {
 		return nil
 	}
 	if err == nil && slices.Contains(cleanupRequest.Stages, "FAILED") {
@@ -225,7 +226,7 @@ func (c *Client) CancelSandboxAllocationRequest(ctx context.Context, allocationR
 	}
 
 	if status == http.StatusNotFound {
-		return &ErrNotFound{ResourceName: "sandbox allocation request", Identifier: strconv.FormatInt(allocationRequestId, 10)}
+		return &Error{ResourceName: "sandbox allocation request", Identifier: allocationRequestId, Err: ErrNotFound}
 	}
 
 	if status != http.StatusOK {
@@ -256,7 +257,7 @@ func (c *Client) GetSandboxRequestAnsibleOutputs(ctx context.Context, sandboxReq
 	outputRaw := sandboxRequestStageOutputRaw{}
 
 	if status == http.StatusNotFound {
-		return nil, &ErrNotFound{ResourceName: "sandbox request", Identifier: strconv.FormatInt(sandboxRequestId, 10)}
+		return nil, &Error{ResourceName: "sandbox request", Identifier: sandboxRequestId, Err: ErrNotFound}
 	}
 
 	if status != http.StatusOK {

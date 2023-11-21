@@ -1,30 +1,22 @@
 package kypo
 
 import (
+	"errors"
 	"fmt"
-	"time"
 )
 
-type ErrTimeout struct {
-	Action     string
-	Identifier string
-	Timeout    time.Duration
-}
+var ErrNotFound = errors.New("not found")
 
-func (e *ErrTimeout) Error() string {
-	return fmt.Sprintf("%s: %s has not finished within %s", e.Action, e.Identifier, e.Timeout)
-}
-
-type ErrNotFound struct {
+type Error struct {
 	ResourceName string
-	Identifier   string
+	Identifier   any
+	Err          error
 }
 
-func (e *ErrNotFound) Error() string {
-	return fmt.Sprintf("resource %s: %s was not found", e.ResourceName, e.Identifier)
+func (e *Error) Error() string {
+	return fmt.Sprintf("resource %s %v: %s", e.ResourceName, e.Identifier, e.Err.Error())
 }
 
-type valueOrError[T any] struct {
-	err   error
-	value T
+func (e *Error) Unwrap() error {
+	return e.Err
 }

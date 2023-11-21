@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -27,7 +26,7 @@ func (c *Client) GetTrainingDefinitionAdaptive(ctx context.Context, definitionID
 	}
 
 	if status == http.StatusNotFound {
-		return nil, &ErrNotFound{ResourceName: "training definition adaptive", Identifier: strconv.FormatInt(definitionID, 10)}
+		return nil, &Error{ResourceName: "training definition adaptive", Identifier: definitionID, Err: ErrNotFound}
 	}
 
 	if status != http.StatusOK {
