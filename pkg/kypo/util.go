@@ -14,10 +14,10 @@ type UserModel struct {
 	Mail       string `json:"mail" tfsdk:"mail"`
 }
 
-func (c *Client) doRequest(req *http.Request) ([]byte, int, error) {
-	err := c.refreshToken(req.Context())
+func (c *Client) doRequest(req *http.Request) (body []byte, statusCode int, err error) {
+	err = c.refreshToken(req.Context())
 	if err != nil {
-		return nil, 0, err
+		return
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -25,16 +25,22 @@ func (c *Client) doRequest(req *http.Request) ([]byte, int, error) {
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return nil, 0, err
+		return
 	}
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
+	defer func() {
+		err2 := res.Body.Close()
+		// If there was an error already, I assume it is more important
+		if err == nil {
+			err = err2
+		}
+	}()
+	statusCode = res.StatusCode
+	body, err = ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, 0, err
+		return
 	}
 
-	return body, res.StatusCode, nil
+	return
 }
 
 func boolToString(b bool) string {
