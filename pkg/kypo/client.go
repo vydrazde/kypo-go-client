@@ -15,6 +15,7 @@ type Client struct {
 	TokenExpiryTime time.Time
 	Username        string
 	Password        string
+	RetryCount      int
 }
 
 // NewClientWithToken creates and returns a Client which uses an already created Bearer token.

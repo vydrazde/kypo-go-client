@@ -1,6 +1,7 @@
 package kypo
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -40,6 +41,26 @@ func (c *Client) doRequest(req *http.Request) (body []byte, statusCode int, err 
 		return
 	}
 
+	return
+}
+
+func (c *Client) doRequestWithRetry(req *http.Request, expectedStatusCode int, resourceName string, identifier any) (body []byte, statusCode int, err error) {
+	for i := 0; i <= c.RetryCount; i++ {
+		body, statusCode, err = c.doRequest(req)
+		if err != nil {
+			return
+		}
+		switch statusCode {
+		case expectedStatusCode:
+			return
+		case http.StatusNotFound:
+			err = &Error{ResourceName: resourceName, Identifier: identifier, Err: ErrNotFound}
+		default:
+			err = &Error{ResourceName: resourceName, Identifier: identifier, Err: fmt.Errorf("status: %d, body: %s", statusCode, body)}
+		}
+	}
+	// Only the last error will be returned
+	// Aggregating the errors in a readable way seems overly complex
 	return
 }
 

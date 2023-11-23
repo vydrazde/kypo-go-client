@@ -58,20 +58,12 @@ func (c *Client) GetSandboxAllocationUnit(ctx context.Context, unitId int64) (*S
 		return nil, err
 	}
 
-	body, status, err := c.doRequest(req)
+	body, _, err := c.doRequestWithRetry(req, http.StatusOK, "sandbox allocation unit", unitId)
 	if err != nil {
 		return nil, err
 	}
 
 	allocationUnit := SandboxAllocationUnit{}
-
-	if status == http.StatusNotFound {
-		return nil, &Error{ResourceName: "sandbox allocation unit", Identifier: unitId, Err: ErrNotFound}
-	}
-
-	if status != http.StatusOK {
-		return nil, fmt.Errorf("status: %d, body: %s", status, body)
-	}
 
 	err = json.Unmarshal(body, &allocationUnit)
 	if err != nil {
@@ -88,13 +80,9 @@ func (c *Client) CreateSandboxAllocationUnits(ctx context.Context, poolId, count
 		return nil, err
 	}
 
-	body, status, err := c.doRequest(req)
+	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox allocation units", "")
 	if err != nil {
 		return nil, err
-	}
-
-	if status != http.StatusCreated {
-		return nil, fmt.Errorf("status: %d, body: %s", status, body)
 	}
 
 	var allocationUnit []SandboxAllocationUnit
@@ -132,17 +120,9 @@ func (c *Client) CreateSandboxCleanupRequest(ctx context.Context, unitId int64) 
 		return nil, err
 	}
 
-	body, status, err := c.doRequest(req)
+	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox cleanup request", "")
 	if err != nil {
 		return nil, err
-	}
-
-	if status == http.StatusNotFound {
-		return nil, &Error{ResourceName: "sandbox allocation unit", Identifier: unitId, Err: ErrNotFound}
-	}
-
-	if status != http.StatusCreated {
-		return nil, fmt.Errorf("status: %d, body: %s", status, body)
 	}
 
 	sandboxRequest := SandboxRequest{}
@@ -220,17 +200,9 @@ func (c *Client) CancelSandboxAllocationRequest(ctx context.Context, allocationR
 		return err
 	}
 
-	body, status, err := c.doRequest(req)
+	_, _, err = c.doRequestWithRetry(req, http.StatusOK, "sandbox allocation request", allocationRequestId)
 	if err != nil {
 		return err
-	}
-
-	if status == http.StatusNotFound {
-		return &Error{ResourceName: "sandbox allocation request", Identifier: allocationRequestId, Err: ErrNotFound}
-	}
-
-	if status != http.StatusOK {
-		return fmt.Errorf("status: %d, body: %s", status, body)
 	}
 
 	return nil
@@ -249,20 +221,12 @@ func (c *Client) GetSandboxRequestAnsibleOutputs(ctx context.Context, sandboxReq
 		return nil, err
 	}
 
-	body, status, err := c.doRequest(req)
+	body, _, err := c.doRequestWithRetry(req, http.StatusOK, "sandbox request output", sandboxRequestId)
 	if err != nil {
 		return nil, err
 	}
 
 	outputRaw := sandboxRequestStageOutputRaw{}
-
-	if status == http.StatusNotFound {
-		return nil, &Error{ResourceName: "sandbox request", Identifier: sandboxRequestId, Err: ErrNotFound}
-	}
-
-	if status != http.StatusOK {
-		return nil, fmt.Errorf("status: %d, body: %s", status, body)
-	}
 
 	err = json.Unmarshal(body, &outputRaw)
 	if err != nil {
