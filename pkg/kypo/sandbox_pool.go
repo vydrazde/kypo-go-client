@@ -20,7 +20,7 @@ type SandboxPool struct {
 	Definition    SandboxDefinition `json:"definition" tfsdk:"definition"`
 }
 
-type SandboxPoolRequest struct {
+type sandboxPoolRequest struct {
 	DefinitionId int64 `json:"definition_id"`
 	MaxSize      int64 `json:"max_size"`
 }
@@ -57,7 +57,7 @@ func (c *Client) GetSandboxPool(ctx context.Context, poolId int64) (*SandboxPool
 
 // CreateSandboxPool creates a sandbox pool from given sandbox definition id and the maximum size of the pool.
 func (c *Client) CreateSandboxPool(ctx context.Context, definitionId, maxSize int64) (*SandboxPool, error) {
-	requestBody, err := json.Marshal(SandboxPoolRequest{definitionId, maxSize})
+	requestBody, err := json.Marshal(sandboxPoolRequest{definitionId, maxSize})
 	if err != nil {
 		return nil, err
 	}

@@ -16,7 +16,7 @@ type SandboxDefinition struct {
 	CreatedBy UserModel `json:"created_by" tfsdk:"created_by"`
 }
 
-type SandboxDefinitionRequest struct {
+type sandboxDefinitionRequest struct {
 	Url string `json:"url"`
 	Rev string `json:"rev"`
 }
@@ -46,7 +46,7 @@ func (c *Client) GetSandboxDefinition(ctx context.Context, definitionID int64) (
 // The `url` must be a URL to a GitLab repository where the sandbox definition is hosted.
 // The `rev` specifies the Git revision to be used.
 func (c *Client) CreateSandboxDefinition(ctx context.Context, url, rev string) (*SandboxDefinition, error) {
-	requestBody, err := json.Marshal(SandboxDefinitionRequest{url, rev})
+	requestBody, err := json.Marshal(sandboxDefinitionRequest{url, rev})
 	if err != nil {
 		return nil, err
 	}
