@@ -28,21 +28,12 @@ func (c *Client) GetSandboxDefinition(ctx context.Context, definitionID int64) (
 		return nil, err
 	}
 
-	body, status, err := c.doRequest(req)
+	body, _, err := c.doRequestWithRetry(req, http.StatusOK, "sandbox definition", definitionID)
 	if err != nil {
 		return nil, err
 	}
 
 	definition := SandboxDefinition{}
-
-	if status == http.StatusNotFound {
-		return nil, &Error{ResourceName: "sandbox definition", Identifier: definitionID, Err: ErrNotFound}
-	}
-
-	if status != http.StatusOK {
-		return nil, fmt.Errorf("status: %d, body: %s", status, body)
-	}
-
 	err = json.Unmarshal(body, &definition)
 	if err != nil {
 		return nil, err
@@ -65,13 +56,9 @@ func (c *Client) CreateSandboxDefinition(ctx context.Context, url, rev string) (
 		return nil, err
 	}
 
-	body, status, err := c.doRequest(req)
+	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox definition", "")
 	if err != nil {
 		return nil, err
-	}
-
-	if status != http.StatusCreated {
-		return nil, fmt.Errorf("status: %d, body: %s", status, body)
 	}
 
 	definition := SandboxDefinition{}
@@ -90,13 +77,9 @@ func (c *Client) DeleteSandboxDefinition(ctx context.Context, definitionID int64
 		return err
 	}
 
-	body, status, err := c.doRequest(req)
+	_, _, err = c.doRequestWithRetry(req, http.StatusNoContent, "sandbox definition", definitionID)
 	if err != nil {
 		return err
-	}
-
-	if status != http.StatusNoContent && status != http.StatusNotFound {
-		return fmt.Errorf("status: %d, body: %s", status, body)
 	}
 
 	return nil

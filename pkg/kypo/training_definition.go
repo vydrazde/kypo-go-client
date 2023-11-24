@@ -20,17 +20,9 @@ func (c *Client) GetTrainingDefinition(ctx context.Context, definitionID int64) 
 	}
 	req.Header.Set("accept", "application/octet-stream")
 
-	body, status, err := c.doRequest(req)
+	body, _, err := c.doRequestWithRetry(req, http.StatusOK, "training definition", definitionID)
 	if err != nil {
 		return nil, err
-	}
-
-	if status == http.StatusNotFound {
-		return nil, &Error{ResourceName: "training definition", Identifier: definitionID, Err: ErrNotFound}
-	}
-
-	if status != http.StatusOK {
-		return nil, fmt.Errorf("status: %d, body: %s", status, body)
 	}
 
 	definition := TrainingDefinition{
@@ -47,13 +39,9 @@ func (c *Client) CreateTrainingDefinition(ctx context.Context, content string) (
 		return nil, err
 	}
 
-	body, status, err := c.doRequest(req)
+	body, _, err := c.doRequestWithRetry(req, http.StatusOK, "training definition", "")
 	if err != nil {
 		return nil, err
-	}
-
-	if status != http.StatusOK {
-		return nil, fmt.Errorf("status: %d, body: %s", status, body)
 	}
 
 	id := struct {
@@ -79,13 +67,9 @@ func (c *Client) DeleteTrainingDefinition(ctx context.Context, definitionID int6
 		return err
 	}
 
-	body, status, err := c.doRequest(req)
+	_, _, err = c.doRequestWithRetry(req, http.StatusOK, "training definition", definitionID)
 	if err != nil {
 		return err
-	}
-
-	if status != http.StatusOK && status != http.StatusNotFound {
-		return fmt.Errorf("status: %d, body: %s", status, body)
 	}
 
 	return nil

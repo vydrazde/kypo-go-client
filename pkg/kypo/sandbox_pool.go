@@ -41,21 +41,12 @@ func (c *Client) GetSandboxPool(ctx context.Context, poolId int64) (*SandboxPool
 		return nil, err
 	}
 
-	body, status, err := c.doRequest(req)
+	body, _, err := c.doRequestWithRetry(req, http.StatusOK, "sandbox pool", poolId)
 	if err != nil {
 		return nil, err
 	}
 
 	pool := SandboxPool{}
-
-	if status == http.StatusNotFound {
-		return nil, &Error{ResourceName: "sandbox pool", Identifier: poolId, Err: ErrNotFound}
-	}
-
-	if status != http.StatusOK {
-		return nil, fmt.Errorf("status: %d, body: %s", status, body)
-	}
-
 	err = json.Unmarshal(body, &pool)
 	if err != nil {
 		return nil, err
@@ -76,13 +67,9 @@ func (c *Client) CreateSandboxPool(ctx context.Context, definitionId, maxSize in
 		return nil, err
 	}
 
-	body, status, err := c.doRequest(req)
+	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox pool", "")
 	if err != nil {
 		return nil, err
-	}
-
-	if status != http.StatusCreated {
-		return nil, fmt.Errorf("status: %d, body: %s", status, body)
 	}
 
 	pool := SandboxPool{}
@@ -101,13 +88,9 @@ func (c *Client) DeleteSandboxPool(ctx context.Context, poolId int64) error {
 		return err
 	}
 
-	body, status, err := c.doRequest(req)
+	_, _, err = c.doRequestWithRetry(req, http.StatusNoContent, "sandbox pool", poolId)
 	if err != nil {
 		return err
-	}
-
-	if status != http.StatusNoContent && status != http.StatusNotFound {
-		return fmt.Errorf("status: %d, body: %s", status, body)
 	}
 
 	return nil
@@ -121,14 +104,11 @@ func (c *Client) CleanupSandboxPool(ctx context.Context, poolId int64, force boo
 		return err
 	}
 
-	body, status, err := c.doRequest(req)
+	_, _, err = c.doRequestWithRetry(req, http.StatusAccepted, "sandbox pool", poolId)
 	if err != nil {
 		return err
 	}
 
-	if status != http.StatusAccepted {
-		return fmt.Errorf("status: %d, body: %s", status, body)
-	}
 	// Wait before cleanup has finished?
 	return nil
 }
