@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 type UserModel struct {
@@ -45,6 +46,9 @@ func (c *Client) doRequest(req *http.Request) (body []byte, statusCode int, err 
 }
 
 func (c *Client) doRequestWithRetry(req *http.Request, expectedStatusCode int, resourceName string, identifier any) (body []byte, statusCode int, err error) {
+	duration := 50 * time.Millisecond
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
 	for i := 0; i <= c.RetryCount; i++ {
 		body, statusCode, err = c.doRequest(req)
 		if err != nil {
@@ -57,6 +61,15 @@ func (c *Client) doRequestWithRetry(req *http.Request, expectedStatusCode int, r
 			err = &Error{ResourceName: resourceName, Identifier: identifier, Err: ErrNotFound}
 		default:
 			err = &Error{ResourceName: resourceName, Identifier: identifier, Err: fmt.Errorf("status: %d, body: %s", statusCode, body)}
+		}
+		timer.Stop()
+		duration *= 2
+		timer.Reset(duration)
+		select {
+		case <-req.Context().Done():
+			err = req.Context().Err()
+			return
+		case <-timer.C:
 		}
 	}
 	// Only the last error will be returned
