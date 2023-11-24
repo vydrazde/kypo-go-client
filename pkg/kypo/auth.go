@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -170,7 +171,7 @@ func (c *Client) authorizeFirstTime(httpClient http.Client, csrf string) (string
 	return token, err
 }
 
-func (c *Client) authenticateKeycloak(ctx context.Context) error {
+func (c *Client) authenticateKeycloak(ctx context.Context) (err error) {
 	query := url.Values{}
 	query.Add("username", c.Username)
 	query.Add("password", c.Password)
@@ -180,19 +181,32 @@ func (c *Client) authenticateKeycloak(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/keycloak/realms/KYPO/protocol/openid-connect/token",
 		c.Endpoint), strings.NewReader(query.Encode()))
 	if err != nil {
-		return err
+		return
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return
 	}
+	defer func() {
+		err2 := res.Body.Close()
+		// If there was an error already, I assume it is more important
+		if err == nil {
+			err = err2
+		}
+	}()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+
 	if res.StatusCode == http.StatusNotFound || res.StatusCode == http.StatusMethodNotAllowed {
 		return &Error{ResourceName: "KYPO Keycloak endpoint", Err: ErrNotFound}
 	}
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("authenticateKeycloak failed, got HTTP code: %d", res.StatusCode)
+		return fmt.Errorf("authentication to Keycloak failed, status: %d, body: %s", res.StatusCode, body)
 	}
 
 	result := struct {
@@ -200,20 +214,15 @@ func (c *Client) authenticateKeycloak(ctx context.Context) error {
 		ExpiresIn   int    `json:"expires_in"`
 	}{}
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		return err
+		return
 	}
 
 	c.Token = result.AccessToken
 	c.TokenExpiryTime = time.Now().Add(time.Duration(result.ExpiresIn) * time.Second)
 
-	return nil
+	return
 }
 
 func (c *Client) authenticate() error {
