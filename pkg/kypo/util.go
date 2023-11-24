@@ -2,7 +2,7 @@ package kypo
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -36,7 +36,7 @@ func (c *Client) doRequest(req *http.Request) (body []byte, statusCode int, err 
 		}
 	}()
 	statusCode = res.StatusCode
-	body, err = ioutil.ReadAll(res.Body)
+	body, err = io.ReadAll(res.Body)
 	if err != nil {
 		return
 	}
