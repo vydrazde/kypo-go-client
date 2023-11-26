@@ -20,13 +20,15 @@ type User struct {
 	Mail       string `json:"mail"`
 }
 
-var sandboxDefinitionResponse = struct {
+type SandboxDefinition struct {
 	Id        int    `json:"id"`
 	Name      string `json:"name"`
 	Url       string `json:"url"`
 	Rev       string `json:"rev"`
 	CreatedBy User   `json:"created_by"`
-}{
+}
+
+var sandboxDefinitionResponse = SandboxDefinition{
 	Id:   1,
 	Name: "name",
 	Url:  "url",
