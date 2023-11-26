@@ -105,11 +105,12 @@ func TestLoginKeycloakUnsuccessful(t *testing.T) {
 		Username:   "username",
 		Password:   "password",
 	}
+	expected := fmt.Errorf("authentication to Keycloak failed, status: 401, body: " +
+		"{\"error\":\"invalid_grant\",\"error_description\":\"Invalid user credentials\"}")
 
 	err := kypo.Authenticate(&c)
 
-	assert.Equal(t, fmt.Errorf("authentication to Keycloak failed, status: 401, body: "+
-		"{\"error\":\"invalid_grant\",\"error_description\":\"Invalid user credentials\"}"), err)
+	assert.Equal(t, expected, err)
 	assert.Equal(t, ts.URL, c.Endpoint)
 	assert.Equal(t, "client_id", c.ClientID)
 	assert.Equal(t, http.DefaultClient, c.HTTPClient)
