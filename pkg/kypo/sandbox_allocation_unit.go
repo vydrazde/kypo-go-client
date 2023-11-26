@@ -18,7 +18,7 @@ type SandboxAllocationUnit struct {
 	PoolId            int64          `json:"pool_id" tfsdk:"pool_id"`
 	AllocationRequest SandboxRequest `json:"allocation_request" tfsdk:"allocation_request"`
 	CleanupRequest    SandboxRequest `json:"cleanup_request" tfsdk:"cleanup_request"`
-	CreatedBy         UserModel      `json:"created_by" tfsdk:"created_by"`
+	CreatedBy         User           `json:"created_by" tfsdk:"created_by"`
 	Locked            bool           `json:"locked" tfsdk:"locked"`
 }
 

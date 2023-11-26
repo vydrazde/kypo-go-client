@@ -15,7 +15,7 @@ type SandboxPool struct {
 	LockId        int64             `json:"lock_id" tfsdk:"lock_id"`
 	Rev           string            `json:"rev" tfsdk:"rev"`
 	RevSha        string            `json:"rev_sha" tfsdk:"rev_sha"`
-	CreatedBy     UserModel         `json:"created_by" tfsdk:"created_by"`
+	CreatedBy     User              `json:"created_by" tfsdk:"created_by"`
 	HardwareUsage HardwareUsage     `json:"hardware_usage" tfsdk:"hardware_usage"`
 	Definition    SandboxDefinition `json:"definition" tfsdk:"definition"`
 }

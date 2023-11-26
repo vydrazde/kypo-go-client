@@ -7,15 +7,6 @@ import (
 	"time"
 )
 
-type UserModel struct {
-	Id         int64  `json:"id" tfsdk:"id"`
-	Sub        string `json:"sub" tfsdk:"sub"`
-	FullName   string `json:"full_name" tfsdk:"full_name"`
-	GivenName  string `json:"given_name" tfsdk:"given_name"`
-	FamilyName string `json:"family_name" tfsdk:"family_name"`
-	Mail       string `json:"mail" tfsdk:"mail"`
-}
-
 func (c *Client) doRequest(req *http.Request) (body []byte, statusCode int, err error) {
 	err = c.refreshToken(req.Context())
 	if err != nil {

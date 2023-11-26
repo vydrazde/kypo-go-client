@@ -9,11 +9,11 @@ import (
 )
 
 type SandboxDefinition struct {
-	Id        int64     `json:"id" tfsdk:"id"`
-	Url       string    `json:"url" tfsdk:"url"`
-	Name      string    `json:"name" tfsdk:"name"`
-	Rev       string    `json:"rev" tfsdk:"rev"`
-	CreatedBy UserModel `json:"created_by" tfsdk:"created_by"`
+	Id        int64  `json:"id" tfsdk:"id"`
+	Url       string `json:"url" tfsdk:"url"`
+	Name      string `json:"name" tfsdk:"name"`
+	Rev       string `json:"rev" tfsdk:"rev"`
+	CreatedBy User   `json:"created_by" tfsdk:"created_by"`
 }
 
 type sandboxDefinitionRequest struct {
