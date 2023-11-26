@@ -56,7 +56,7 @@ func TestGetTrainingDefinitionSuccessful(t *testing.T) {
 			VariantSandboxes:  false,
 		}
 		response, _ := json.Marshal(r)
-		fmt.Fprint(writer, string(response))
+		_, _ = fmt.Fprint(writer, string(response))
 	}))
 	defer ts.Close()
 
@@ -158,7 +158,7 @@ func TestCreateTrainingDefinitionSuccessful(t *testing.T) {
 			LastEditedBy:       "User 1",
 		}
 		response, _ := json.Marshal(r)
-		fmt.Fprint(writer, string(response))
+		_, _ = fmt.Fprint(writer, string(response))
 	}))
 	defer ts.Close()
 
@@ -252,7 +252,7 @@ func TestDeleteTrainingDefinitionNotFound(t *testing.T) {
 			},
 		}
 		response, _ := json.Marshal(r)
-		fmt.Fprint(writer, string(response))
+		_, _ = fmt.Fprint(writer, string(response))
 	}))
 	defer ts.Close()
 

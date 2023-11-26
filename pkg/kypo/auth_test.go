@@ -49,7 +49,7 @@ func keycloakSuccessfulHandler(t *testing.T, writer http.ResponseWriter, request
 		Scope:            "email openid profile",
 	}
 	response, _ := json.Marshal(r)
-	fmt.Fprint(writer, string(response))
+	_, _ = fmt.Fprint(writer, string(response))
 }
 
 func TestLoginKeycloakSuccessful(t *testing.T) {
@@ -93,7 +93,7 @@ func TestLoginKeycloakUnsuccessful(t *testing.T) {
 		}
 		response, _ := json.Marshal(r)
 		writer.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(writer, string(response))
+		_, _ = fmt.Fprint(writer, string(response))
 	}))
 	defer ts.Close()
 
