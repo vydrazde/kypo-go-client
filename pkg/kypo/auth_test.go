@@ -1,10 +1,11 @@
-package kypo
+package kypo_test
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/vydrazde/kypo-go-client/pkg/kypo"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -57,7 +58,16 @@ func TestLoginKeycloakSuccessful(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := NewClient(ts.URL, "client_id", "username", "password")
+	c := kypo.Client{
+		Endpoint:   ts.URL,
+		ClientID:   "client_id",
+		HTTPClient: http.DefaultClient,
+		Token:      "old_token",
+		Username:   "username",
+		Password:   "password",
+	}
+
+	err := kypo.Authenticate(&c)
 
 	assert.NoError(t, err)
 	assert.Equal(t, ts.URL, c.Endpoint)
@@ -87,11 +97,26 @@ func TestLoginKeycloakUnsuccessful(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := NewClient(ts.URL, "client_id", "username", "password")
+	c := kypo.Client{
+		Endpoint:   ts.URL,
+		ClientID:   "client_id",
+		HTTPClient: http.DefaultClient,
+		Token:      "token",
+		Username:   "username",
+		Password:   "password",
+	}
+
+	err := kypo.Authenticate(&c)
 
 	assert.Equal(t, fmt.Errorf("authentication to Keycloak failed, status: 401, body: "+
 		"{\"error\":\"invalid_grant\",\"error_description\":\"Invalid user credentials\"}"), err)
-	assert.Nil(t, c)
+	assert.Equal(t, ts.URL, c.Endpoint)
+	assert.Equal(t, "client_id", c.ClientID)
+	assert.Equal(t, http.DefaultClient, c.HTTPClient)
+	assert.Equal(t, "token", c.Token)
+	assert.Equal(t, "username", c.Username)
+	assert.Equal(t, "password", c.Password)
+	assert.Equal(t, 0, c.RetryCount)
 }
 
 func TestRefreshToken(t *testing.T) {
@@ -102,7 +127,7 @@ func TestRefreshToken(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := Client{
+	c := kypo.Client{
 		Endpoint:   ts.URL,
 		ClientID:   "client_id",
 		HTTPClient: http.DefaultClient,
@@ -111,18 +136,18 @@ func TestRefreshToken(t *testing.T) {
 		Password:   "password",
 	}
 
-	err := c.refreshToken(context.Background())
+	err := kypo.RefreshToken(&c, context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, 0, requestCounter)
 
 	c.TokenExpiryTime = time.Now().Add(time.Hour)
 
-	err = c.refreshToken(context.Background())
+	err = kypo.RefreshToken(&c, context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, 0, requestCounter)
 
 	c.TokenExpiryTime = time.Now()
-	err = c.refreshToken(context.Background())
+	err = kypo.RefreshToken(&c, context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, 1, requestCounter)
 	assert.Equal(t, "token", c.Token)
