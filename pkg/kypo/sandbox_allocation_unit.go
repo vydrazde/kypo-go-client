@@ -244,7 +244,7 @@ func (c *Client) GetSandboxRequestAnsibleOutputs(ctx context.Context, sandboxReq
 	}
 
 	for _, line := range outputRaw.Results {
-		output.Result += "\n" + line.Content
+		output.Result += line.Content + "\n"
 	}
 
 	return &output, nil
