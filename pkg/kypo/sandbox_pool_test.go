@@ -360,7 +360,7 @@ func TestCleanupSandboxPoolSuccessful(t *testing.T) {
 		assertSandboxPoolCleanup(t, request)
 
 		writer.WriteHeader(http.StatusAccepted)
-		r := []AllocationRequest{
+		r := []SandboxAllocationRequest{
 			{
 				Id:               1,
 				AllocationUnitId: 1,
