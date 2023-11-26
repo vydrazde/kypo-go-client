@@ -188,7 +188,8 @@ func (c *Client) CreateSandboxCleanupRequestAwait(ctx context.Context, unitId in
 		return nil
 	}
 	if err == nil && slices.Contains(cleanupRequest.Stages, "FAILED") {
-		return fmt.Errorf("sandbox cleanup request finished with error")
+		return &Error{ResourceName: "sandbox cleanup request", Identifier: fmt.Sprintf("sandbox allocation unit %d", unitId),
+			Err: fmt.Errorf("sandbox cleanup request finished with error")}
 	}
 	return err
 }
