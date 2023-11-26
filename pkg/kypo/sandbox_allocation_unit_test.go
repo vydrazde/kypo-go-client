@@ -227,6 +227,97 @@ func TestCreateSandboxAllocationUnitServerError(t *testing.T) {
 	assert.Equal(t, expected, err)
 }
 
+func assertSandboxRequest(t *testing.T, request *http.Request, requestType string) {
+	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
+	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
+	assert.Equal(t, fmt.Sprintf("/kypo-sandbox-service/api/v1/sandbox-allocation-units/1/%s-request", requestType), request.URL.Path)
+	assert.Equal(t, "GET", request.Method)
+}
+
+func TestCreateSandboxAllocationUnitAwaitSuccessful(t *testing.T) {
+	counter := 0
+	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		counter++
+		if counter == 1 {
+			assertSandboxAllocationUnitCreate(t, request)
+
+			writer.WriteHeader(http.StatusCreated)
+			response, _ := json.Marshal([]SandboxAllocationUnit{sandboxAllocationUnitResponse})
+			_, _ = fmt.Fprint(writer, string(response))
+			return
+		}
+
+		assertSandboxRequest(t, request, "allocation")
+		r := SandboxAllocationRequest{
+			Id:               1,
+			AllocationUnitId: 1,
+			Created:          "2023-11-26T17:04:20.032500+01:00",
+			Stages:           []string{"FINISHED", "FINISHED", "FINISHED"},
+		}
+		response, _ := json.Marshal(r)
+		_, _ = fmt.Fprint(writer, string(response))
+	}))
+	defer ts.Close()
+
+	c := minimalClient(ts)
+	expected := expectedSandboxAllocationUnit
+	expected.AllocationRequest.Stages = []string{"FINISHED", "FINISHED", "FINISHED"}
+	expected.AllocationRequest.Created = "2023-11-26T17:04:20.032500+01:00"
+
+	actual, err := c.CreateSandboxAllocationUnitAwait(context.Background(), 1, 1)
+
+	assert.NoError(t, err)
+	assert.Equal(t, &expected, actual)
+	assert.Equal(t, 2, counter)
+}
+
+func TestCreateSandboxAllocationUnitAwaitSuccessfulWithDelay(t *testing.T) {
+	counter := 0
+	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		counter++
+		if counter == 1 {
+			assertSandboxAllocationUnitCreate(t, request)
+
+			writer.WriteHeader(http.StatusCreated)
+			response, _ := json.Marshal([]SandboxAllocationUnit{sandboxAllocationUnitResponse})
+			_, _ = fmt.Fprint(writer, string(response))
+			return
+		}
+
+		assertSandboxRequest(t, request, "allocation")
+		r := SandboxAllocationRequest{
+			Id:               1,
+			AllocationUnitId: 1,
+			Created:          "2023-11-26T17:04:20.032500+01:00",
+			Stages:           []string{"FINISHED", "FINISHED", "RUNNING"},
+		}
+
+		switch counter {
+		case 2:
+			r.Stages = []string{"FINISHED", "FINISHED", "IN_QUEUE"}
+		case 3:
+			r.Stages = []string{"FINISHED", "FINISHED", "RUNNING"}
+		default:
+			r.Stages = []string{"FINISHED", "FINISHED", "FINISHED"}
+		}
+
+		response, _ := json.Marshal(r)
+		_, _ = fmt.Fprint(writer, string(response))
+	}))
+	defer ts.Close()
+
+	c := minimalClient(ts)
+	expected := expectedSandboxAllocationUnit
+	expected.AllocationRequest.Stages = []string{"FINISHED", "FINISHED", "FINISHED"}
+	expected.AllocationRequest.Created = "2023-11-26T17:04:20.032500+01:00"
+
+	actual, err := c.CreateSandboxAllocationUnitAwait(context.Background(), 1, 1)
+
+	assert.NoError(t, err)
+	assert.Equal(t, &expected, actual)
+	assert.Equal(t, 4, counter)
+}
+
 func assertSandboxAllocationUnitCleanup(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
@@ -310,4 +401,208 @@ func TestCleanupSandboxAllocationUnitServerError(t *testing.T) {
 
 	assert.Nil(t, actual)
 	assert.Equal(t, expected, err)
+}
+
+func TestCleanupSandboxAllocationUnitAwaitSuccessful(t *testing.T) {
+	counter := 0
+	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		counter++
+		if counter == 1 {
+			assertSandboxAllocationUnitCleanup(t, request)
+
+			writer.WriteHeader(http.StatusCreated)
+			r := SandboxAllocationRequest{
+				Id:               1,
+				AllocationUnitId: 1,
+				Created:          "2023-11-26T17:04:20.032500+01:00",
+				Stages:           []string{"IN_QUEUE", "IN_QUEUE", "IN_QUEUE"},
+			}
+			response, _ := json.Marshal(r)
+			_, _ = fmt.Fprint(writer, string(response))
+			return
+		}
+
+		assertSandboxRequest(t, request, "cleanup")
+		r := SandboxAllocationRequest{
+			Id:               1,
+			AllocationUnitId: 1,
+			Created:          "2023-11-26T17:04:20.032500+01:00",
+			Stages:           []string{"FINISHED", "FINISHED", "FINISHED"},
+		}
+		response, _ := json.Marshal(r)
+		_, _ = fmt.Fprint(writer, string(response))
+	}))
+	defer ts.Close()
+
+	c := minimalClient(ts)
+
+	err := c.CreateSandboxCleanupRequestAwait(context.Background(), 1, 1)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 2, counter)
+}
+
+func TestCleanupSandboxAllocationUnitAwaitSuccessfulWithDelay(t *testing.T) {
+	counter := 0
+	r := SandboxAllocationRequest{
+		Id:               1,
+		AllocationUnitId: 1,
+		Created:          "2023-11-26T17:04:20.032500+01:00",
+		Stages:           []string{"IN_QUEUE", "IN_QUEUE", "IN_QUEUE"},
+	}
+	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		counter++
+		if counter == 1 {
+			assertSandboxAllocationUnitCleanup(t, request)
+
+			writer.WriteHeader(http.StatusCreated)
+			response, _ := json.Marshal(r)
+			_, _ = fmt.Fprint(writer, string(response))
+			return
+		}
+
+		assertSandboxRequest(t, request, "cleanup")
+
+		switch counter {
+		case 2:
+			r.Stages = []string{"FINISHED", "FINISHED", "IN_QUEUE"}
+		case 3:
+			r.Stages = []string{"FINISHED", "FINISHED", "RUNNING"}
+		default:
+			r.Stages = []string{"FINISHED", "FINISHED", "FINISHED"}
+		}
+
+		response, _ := json.Marshal(r)
+		_, _ = fmt.Fprint(writer, string(response))
+	}))
+	defer ts.Close()
+
+	c := minimalClient(ts)
+
+	err := c.CreateSandboxCleanupRequestAwait(context.Background(), 1, 1)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 4, counter)
+}
+
+func TestCleanupSandboxAllocationUnitAwaitFailed(t *testing.T) {
+	counter := 0
+	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		counter++
+		if counter == 1 {
+			assertSandboxAllocationUnitCleanup(t, request)
+
+			writer.WriteHeader(http.StatusCreated)
+			r := SandboxAllocationRequest{
+				Id:               1,
+				AllocationUnitId: 1,
+				Created:          "2023-11-26T17:04:20.032500+01:00",
+				Stages:           []string{"IN_QUEUE", "IN_QUEUE", "IN_QUEUE"},
+			}
+			response, _ := json.Marshal(r)
+			_, _ = fmt.Fprint(writer, string(response))
+			return
+		}
+
+		assertSandboxRequest(t, request, "cleanup")
+		r := SandboxAllocationRequest{
+			Id:               1,
+			AllocationUnitId: 1,
+			Created:          "2023-11-26T17:04:20.032500+01:00",
+			Stages:           []string{"FINISHED", "FINISHED", "FAILED"},
+		}
+		response, _ := json.Marshal(r)
+		_, _ = fmt.Fprint(writer, string(response))
+	}))
+	defer ts.Close()
+
+	c := minimalClient(ts)
+	expected := &kypo.Error{
+		ResourceName: "sandbox cleanup request",
+		Identifier:   "sandbox allocation unit 1",
+		Err:          fmt.Errorf("sandbox cleanup request finished with error"),
+	}
+
+	err := c.CreateSandboxCleanupRequestAwait(context.Background(), 1, 1)
+
+	assert.Equal(t, expected, err)
+	assert.Equal(t, 2, counter)
+}
+
+func TestCancelSandboxAllocationRequestSuccessful(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
+		assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
+		assert.Equal(t, "/kypo-sandbox-service/api/v1/allocation-requests/1/cancel", request.URL.Path)
+		assert.Equal(t, "PATCH", request.Method)
+	}))
+	defer ts.Close()
+
+	c := minimalClient(ts)
+
+	err := c.CancelSandboxAllocationRequest(context.Background(), 1)
+
+	assert.NoError(t, err)
+}
+
+func TestGetSandboxAllocationRequestOutputSuccessful(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
+		assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
+		assert.Equal(t, "/kypo-sandbox-service/api/v1/allocation-requests/1/stages/user-ansible/outputs", request.URL.Path)
+		assert.Equal(t, "GET", request.Method)
+
+		err := request.ParseForm()
+		assert.NoError(t, err)
+		assert.Equal(t, "1", request.Form.Get("page"))
+		assert.Equal(t, "10", request.Form.Get("page_size"))
+
+		type Content struct {
+			Content string `json:"content"`
+		}
+		r := struct {
+			Page       int       `json:"page"`
+			PageSize   int       `json:"page_size"`
+			PageCount  int       `json:"page_count"`
+			Count      int       `json:"count"`
+			TotalCount int       `json:"total_count"`
+			Results    []Content `json:"results"`
+		}{
+			Page:       1,
+			PageSize:   10,
+			PageCount:  10,
+			Count:      10,
+			TotalCount: 100,
+			Results: []Content{
+				{Content: "1"},
+				{Content: "2"},
+				{Content: "3"},
+				{Content: "4"},
+				{Content: "5"},
+				{Content: "6"},
+				{Content: "7"},
+				{Content: "8"},
+				{Content: "9"},
+				{Content: "10"},
+			},
+		}
+		response, _ := json.Marshal(r)
+		_, _ = fmt.Fprint(writer, string(response))
+	}))
+	defer ts.Close()
+
+	c := minimalClient(ts)
+	expected := kypo.SandboxRequestStageOutput{
+		Page:       1,
+		PageSize:   10,
+		PageCount:  10,
+		Count:      10,
+		TotalCount: 100,
+		Result:     "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+	}
+
+	actual, err := c.GetSandboxRequestAnsibleOutputs(context.Background(), 1, 1, 10, "user-ansible")
+
+	assert.NoError(t, err)
+	assert.Equal(t, &expected, actual)
 }
