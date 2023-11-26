@@ -225,6 +225,35 @@ func TestCreateSandboxPoolSuccessful(t *testing.T) {
 	assert.Equal(t, &expectedPoolResponse, actual)
 }
 
+func TestCreateSandboxPoolNotFound(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assertSandboxPoolCreate(t, request)
+
+		writer.WriteHeader(http.StatusNotFound)
+		r := struct {
+			Detail string `json:"detail"`
+		}{
+			Detail: "No Definition matches the given query",
+		}
+		response, _ := json.Marshal(r)
+		_, _ = fmt.Fprint(writer, string(response))
+	}))
+	defer ts.Close()
+
+	c := minimalClient(ts)
+
+	expected := &kypo.Error{
+		ResourceName: "sandbox pool",
+		Identifier:   "sandbox definition 1",
+		Err:          kypo.ErrNotFound,
+	}
+
+	actual, err := c.CreateSandboxPool(context.Background(), 1, 1)
+
+	assert.Nil(t, actual)
+	assert.Equal(t, expected, err)
+}
+
 func TestCreateSandboxPoolServerError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assertSandboxPoolCreate(t, request)
@@ -237,7 +266,7 @@ func TestCreateSandboxPoolServerError(t *testing.T) {
 
 	expected := &kypo.Error{
 		ResourceName: "sandbox pool",
-		Identifier:   "",
+		Identifier:   "sandbox definition 1",
 		Err:          fmt.Errorf("status: 500, body: "),
 	}
 
@@ -320,6 +349,10 @@ func assertSandboxPoolCleanup(t *testing.T, request *http.Request) {
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-sandbox-service/api/v1/pools/1/cleanup-requests", request.URL.Path)
 	assert.Equal(t, "POST", request.Method)
+
+	err := request.ParseForm()
+	assert.NoError(t, err)
+	assert.Equal(t, "false", request.Form.Get("force"))
 }
 
 func TestCleanupSandboxPoolSuccessful(t *testing.T) {

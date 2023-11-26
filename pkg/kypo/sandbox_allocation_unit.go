@@ -80,7 +80,7 @@ func (c *Client) CreateSandboxAllocationUnits(ctx context.Context, poolId, count
 		return nil, err
 	}
 
-	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox allocation units", "")
+	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox allocation units", fmt.Sprintf("sandbox pool %d", poolId))
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (c *Client) CreateSandboxCleanupRequest(ctx context.Context, unitId int64) 
 		return nil, err
 	}
 
-	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox cleanup request", "")
+	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox cleanup request", fmt.Sprintf("sandbox allocation unit %d", unitId))
 	if err != nil {
 		return nil, err
 	}

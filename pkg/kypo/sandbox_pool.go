@@ -67,7 +67,7 @@ func (c *Client) CreateSandboxPool(ctx context.Context, definitionId, maxSize in
 		return nil, err
 	}
 
-	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox pool", "")
+	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox pool", fmt.Sprintf("sandbox definition %d", definitionId))
 	if err != nil {
 		return nil, err
 	}
