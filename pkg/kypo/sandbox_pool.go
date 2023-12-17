@@ -36,7 +36,7 @@ type HardwareUsage struct {
 
 // GetSandboxPool reads the given sandbox pool.
 func (c *Client) GetSandboxPool(ctx context.Context, poolId int64) (*SandboxPool, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d", c.Endpoint, poolId), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d", c.Endpoint, poolId), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (c *Client) CreateSandboxPool(ctx context.Context, definitionId, maxSize in
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools", c.Endpoint), strings.NewReader(string(requestBody)))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools", c.Endpoint), strings.NewReader(string(requestBody)))
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (c *Client) CreateSandboxPool(ctx context.Context, definitionId, maxSize in
 
 // DeleteSandboxPool deletes the given sandbox pool.
 func (c *Client) DeleteSandboxPool(ctx context.Context, poolId int64) error {
-	req, err := http.NewRequestWithContext(ctx, "DELETE", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d", c.Endpoint, poolId), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d", c.Endpoint, poolId), nil)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (c *Client) DeleteSandboxPool(ctx context.Context, poolId int64) error {
 
 // CleanupSandboxPool creates a cleanup request for all allocation units in the pool.
 func (c *Client) CleanupSandboxPool(ctx context.Context, poolId int64, force bool) error {
-	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d/cleanup-requests?force=%s",
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/kypo-sandbox-service/api/v1/pools/%d/cleanup-requests?force=%s",
 		c.Endpoint, poolId, boolToString(force)), nil)
 	if err != nil {
 		return err

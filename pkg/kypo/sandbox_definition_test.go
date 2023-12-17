@@ -47,7 +47,7 @@ func assertSandboxDefinitionGet(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-sandbox-service/api/v1/definitions/1", request.URL.Path)
-	assert.Equal(t, "GET", request.Method)
+	assert.Equal(t, http.MethodGet, request.Method)
 }
 
 func TestGetSandboxDefinitionSuccessful(t *testing.T) {
@@ -137,7 +137,7 @@ func assertSandboxDefinitionCreate(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-sandbox-service/api/v1/definitions", request.URL.Path)
-	assert.Equal(t, "POST", request.Method)
+	assert.Equal(t, http.MethodPost, request.Method)
 }
 
 func TestCreateSandboxDefinitionSuccessful(t *testing.T) {
@@ -199,7 +199,7 @@ func assertSandboxDefinitionDelete(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-sandbox-service/api/v1/definitions/1", request.URL.Path)
-	assert.Equal(t, "DELETE", request.Method)
+	assert.Equal(t, http.MethodDelete, request.Method)
 }
 
 func TestDeleteSandboxDefinitionSuccessful(t *testing.T) {

@@ -15,7 +15,7 @@ import (
 func assertRequestToKeycloak(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/x-www-form-urlencoded", request.Header.Get("Content-Type"))
 	assert.Equal(t, "/keycloak/realms/KYPO/protocol/openid-connect/token", request.URL.Path)
-	assert.Equal(t, "POST", request.Method)
+	assert.Equal(t, http.MethodPost, request.Method)
 
 	err := request.ParseForm()
 	assert.NoError(t, err)

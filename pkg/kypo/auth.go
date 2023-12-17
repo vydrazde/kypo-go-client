@@ -47,7 +47,7 @@ func (c *Client) authorize(httpClient http.Client) (string, error) {
 	query.Add("scope", "openid email profile")
 	query.Add("redirect_uri", c.Endpoint)
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/csirtmu-dummy-issuer-server/authorize?%s",
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/csirtmu-dummy-issuer-server/authorize?%s",
 		c.Endpoint, query.Encode()), nil)
 	if err != nil {
 		return "", err
@@ -95,7 +95,7 @@ func (c *Client) login(httpClient http.Client, csrf string) (string, string, err
 	query.Add("_csrf", csrf)
 	query.Add("submit", "Login")
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/csirtmu-dummy-issuer-server/login",
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/csirtmu-dummy-issuer-server/login",
 		c.Endpoint), strings.NewReader(query.Encode()))
 	if err != nil {
 		return "", "", err
@@ -144,7 +144,7 @@ func (c *Client) authorizeFirstTime(httpClient http.Client, csrf string) (string
 	query.Add("authorize", "Authorize")
 	query.Add("_csrf", csrf)
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/csirtmu-dummy-issuer-server/authorize",
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/csirtmu-dummy-issuer-server/authorize",
 		c.Endpoint), strings.NewReader(query.Encode()))
 	if err != nil {
 		return "", err
@@ -178,7 +178,7 @@ func (c *Client) authenticateKeycloak(ctx context.Context) (err error) {
 	query.Add("client_id", c.ClientID)
 	query.Add("grant_type", "password")
 
-	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/keycloak/realms/KYPO/protocol/openid-connect/token",
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/keycloak/realms/KYPO/protocol/openid-connect/token",
 		c.Endpoint), strings.NewReader(query.Encode()))
 	if err != nil {
 		return

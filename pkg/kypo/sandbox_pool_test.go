@@ -116,7 +116,7 @@ func assertSandboxPoolGet(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-sandbox-service/api/v1/pools/1", request.URL.Path)
-	assert.Equal(t, "GET", request.Method)
+	assert.Equal(t, http.MethodGet, request.Method)
 }
 
 func TestGetSandboxPoolSuccessful(t *testing.T) {
@@ -191,7 +191,7 @@ func assertSandboxPoolCreate(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-sandbox-service/api/v1/pools", request.URL.Path)
-	assert.Equal(t, "POST", request.Method)
+	assert.Equal(t, http.MethodPost, request.Method)
 
 	body, err := io.ReadAll(request.Body)
 	assert.NoError(t, err)
@@ -280,7 +280,7 @@ func assertSandboxPoolDelete(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-sandbox-service/api/v1/pools/1", request.URL.Path)
-	assert.Equal(t, "DELETE", request.Method)
+	assert.Equal(t, http.MethodDelete, request.Method)
 }
 
 func TestDeleteSandboxPoolSuccessful(t *testing.T) {
@@ -348,7 +348,7 @@ func assertSandboxPoolCleanup(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-sandbox-service/api/v1/pools/1/cleanup-requests", request.URL.Path)
-	assert.Equal(t, "POST", request.Method)
+	assert.Equal(t, http.MethodPost, request.Method)
 
 	err := request.ParseForm()
 	assert.NoError(t, err)

@@ -27,7 +27,7 @@ func assertTrainingDefinitionGet(t *testing.T, request *http.Request) {
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "application/octet-stream", request.Header.Get("accept"))
 	assert.Equal(t, "/kypo-rest-training/api/v1/exports/training-definitions/1", request.URL.Path)
-	assert.Equal(t, "GET", request.Method)
+	assert.Equal(t, http.MethodGet, request.Method)
 }
 
 func TestGetTrainingDefinitionSuccessful(t *testing.T) {
@@ -121,7 +121,7 @@ func assertTrainingDefinitionCreate(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-rest-training/api/v1/imports/training-definitions", request.URL.Path)
-	assert.Equal(t, "POST", request.Method)
+	assert.Equal(t, http.MethodPost, request.Method)
 }
 
 func TestCreateTrainingDefinitionSuccessful(t *testing.T) {
@@ -201,7 +201,7 @@ func assertTrainingDefinitionDelete(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-rest-training/api/v1/training-definitions/1", request.URL.Path)
-	assert.Equal(t, "DELETE", request.Method)
+	assert.Equal(t, http.MethodDelete, request.Method)
 }
 
 func TestDeleteTrainingDefinitionSuccessful(t *testing.T) {

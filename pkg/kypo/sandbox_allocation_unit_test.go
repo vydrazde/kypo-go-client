@@ -74,7 +74,7 @@ func assertSandboxAllocationUnitGet(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-sandbox-service/api/v1/sandbox-allocation-units/1", request.URL.Path)
-	assert.Equal(t, "GET", request.Method)
+	assert.Equal(t, http.MethodGet, request.Method)
 }
 
 func TestGetSandboxAllocationUnitSuccessful(t *testing.T) {
@@ -149,7 +149,7 @@ func assertSandboxAllocationUnitCreate(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-sandbox-service/api/v1/pools/1/sandbox-allocation-units", request.URL.Path)
-	assert.Equal(t, "POST", request.Method)
+	assert.Equal(t, http.MethodPost, request.Method)
 
 	err := request.ParseForm()
 	assert.NoError(t, err)
@@ -231,7 +231,7 @@ func assertSandboxRequest(t *testing.T, request *http.Request, requestType strin
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, fmt.Sprintf("/kypo-sandbox-service/api/v1/sandbox-allocation-units/1/%s-request", requestType), request.URL.Path)
-	assert.Equal(t, "GET", request.Method)
+	assert.Equal(t, http.MethodGet, request.Method)
 }
 
 func TestCreateSandboxAllocationUnitAwaitSuccessful(t *testing.T) {
@@ -322,7 +322,7 @@ func assertSandboxAllocationUnitCleanup(t *testing.T, request *http.Request) {
 	assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 	assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 	assert.Equal(t, "/kypo-sandbox-service/api/v1/sandbox-allocation-units/1/cleanup-request", request.URL.Path)
-	assert.Equal(t, "POST", request.Method)
+	assert.Equal(t, http.MethodPost, request.Method)
 }
 
 func TestCleanupSandboxAllocationUnitSuccessful(t *testing.T) {
@@ -534,7 +534,7 @@ func TestCancelSandboxAllocationRequestSuccessful(t *testing.T) {
 		assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 		assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 		assert.Equal(t, "/kypo-sandbox-service/api/v1/allocation-requests/1/cancel", request.URL.Path)
-		assert.Equal(t, "PATCH", request.Method)
+		assert.Equal(t, http.MethodPatch, request.Method)
 	}))
 	defer ts.Close()
 
@@ -550,7 +550,7 @@ func TestGetSandboxAllocationRequestOutputSuccessful(t *testing.T) {
 		assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 		assert.Equal(t, "Bearer token", request.Header.Get("Authorization"))
 		assert.Equal(t, "/kypo-sandbox-service/api/v1/allocation-requests/1/stages/user-ansible/outputs", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		err := request.ParseForm()
 		assert.NoError(t, err)
