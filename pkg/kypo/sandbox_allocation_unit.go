@@ -94,6 +94,31 @@ func (c *Client) CreateSandboxAllocationUnits(ctx context.Context, poolId, count
 	return allocationUnit.Results, nil
 }
 
+func (c *Client) AwaitAllocationRequestCreate(ctx context.Context, requestId int64, pollTime time.Duration) error {
+	ticker := time.NewTicker(pollTime)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/kypo-sandbox-service/api/v1/sandbox-allocation-units/%d/allocation-request", c.Endpoint, requestId), nil)
+			if err != nil {
+				return err
+			}
+
+			_, status, err := c.doRequest(req)
+			if err != nil {
+				return err
+			}
+
+			if status != http.StatusNotFound {
+				return nil
+			}
+		}
+	}
+}
+
 // CreateSandboxAllocationUnitAwait creates a single sandbox allocation unit and waits until its allocation finishes.
 // Once the allocation is started, the status is checked once every `pollTime` elapses.
 func (c *Client) CreateSandboxAllocationUnitAwait(ctx context.Context, poolId int64, pollTime time.Duration) (*SandboxAllocationUnit, error) {
@@ -105,6 +130,10 @@ func (c *Client) CreateSandboxAllocationUnitAwait(ctx context.Context, poolId in
 		return nil, fmt.Errorf("expected one allocation unit to be created, got %d instead", len(units))
 	}
 	unit := units[0]
+	err = c.AwaitAllocationRequestCreate(ctx, unit.Id, pollTime)
+	if err != nil {
+		return nil, err
+	}
 	request, err := c.PollRequestFinished(ctx, unit.Id, pollTime, "allocation")
 	if err != nil {
 		return nil, err

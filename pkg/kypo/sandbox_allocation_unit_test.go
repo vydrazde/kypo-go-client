@@ -287,7 +287,7 @@ func TestCreateSandboxAllocationUnitAwaitSuccessful(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, &expected, actual)
-	assert.Equal(t, 2, counter)
+	assert.Equal(t, 3, counter)
 }
 
 func TestCreateSandboxAllocationUnitAwaitSuccessfulWithDelay(t *testing.T) {
