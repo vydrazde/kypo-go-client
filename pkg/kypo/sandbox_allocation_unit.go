@@ -29,6 +29,15 @@ type SandboxRequest struct {
 	Stages           []string `json:"stages" tfsdk:"stages"`
 }
 
+type Pagination[T any] struct {
+	Page       int64 `json:"page" tfsdk:"page"`
+	PageSize   int64 `json:"page_size" tfsdk:"page_size"`
+	PageCount  int64 `json:"page_count" tfsdk:"page_count"`
+	Count      int64 `json:"count" tfsdk:"line_count"`
+	TotalCount int64 `json:"total_count" tfsdk:"total_count"`
+	Results    T     `json:"results" tfsdk:"results"`
+}
+
 type SandboxRequestStageOutput struct {
 	Page       int64  `json:"page" tfsdk:"page"`
 	PageSize   int64  `json:"page_size" tfsdk:"page_size"`
@@ -36,15 +45,6 @@ type SandboxRequestStageOutput struct {
 	Count      int64  `json:"count" tfsdk:"line_count"`
 	TotalCount int64  `json:"total_count" tfsdk:"total_count"`
 	Result     string `json:"result" tfsdk:"result"`
-}
-
-type sandboxRequestStageOutputRaw struct {
-	Page       int64        `json:"page"`
-	PageSize   int64        `json:"page_size"`
-	PageCount  int64        `json:"page_count"`
-	Count      int64        `json:"count"`
-	TotalCount int64        `json:"total_count"`
-	Results    []outputLine `json:"results"`
 }
 
 type outputLine struct {
@@ -80,18 +80,18 @@ func (c *Client) CreateSandboxAllocationUnits(ctx context.Context, poolId, count
 		return nil, err
 	}
 
-	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox allocation units", fmt.Sprintf("sandbox pool %d", poolId))
+	body, _, err := c.doRequestWithRetry(req, http.StatusOK, "sandbox allocation units", fmt.Sprintf("sandbox pool %d", poolId))
 	if err != nil {
 		return nil, err
 	}
 
-	var allocationUnit []SandboxAllocationUnit
+	var allocationUnit Pagination[[]SandboxAllocationUnit]
 	err = json.Unmarshal(body, &allocationUnit)
 	if err != nil {
 		return nil, err
 	}
 
-	return allocationUnit, nil
+	return allocationUnit.Results, nil
 }
 
 // CreateSandboxAllocationUnitAwait creates a single sandbox allocation unit and waits until its allocation finishes.
@@ -227,7 +227,7 @@ func (c *Client) GetSandboxRequestAnsibleOutputs(ctx context.Context, sandboxReq
 		return nil, err
 	}
 
-	outputRaw := sandboxRequestStageOutputRaw{}
+	outputRaw := Pagination[[]outputLine]{}
 
 	err = json.Unmarshal(body, &outputRaw)
 	if err != nil {
