@@ -27,6 +27,15 @@ type SandboxAllocationUnit struct {
 	Locked            bool                      `json:"locked"`
 }
 
+type Pagination struct {
+	Page       int `json:"page"`
+	PageSize   int `json:"page_size"`
+	PageCount  int `json:"page_count"`
+	Count      int `json:"count"`
+	TotalCount int `json:"total_count"`
+	Results    any `json:"results"`
+}
+
 var (
 	sandboxAllocationUnitResponse = SandboxAllocationUnit{
 		Id:     1,
@@ -47,6 +56,16 @@ var (
 			Mail:       "mail",
 		},
 		Locked: false,
+	}
+	sandboxAllocationUnitResponsePagination = Pagination{
+		Page:       1,
+		PageSize:   50,
+		PageCount:  1,
+		Count:      1,
+		TotalCount: 1,
+		Results: []SandboxAllocationUnit{
+			sandboxAllocationUnitResponse,
+		},
 	}
 	expectedSandboxAllocationUnit = kypo.SandboxAllocationUnit{
 		Id:     1,
@@ -160,8 +179,8 @@ func TestCreateSandboxAllocationUnitSuccessful(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assertSandboxAllocationUnitCreate(t, request)
 
-		writer.WriteHeader(http.StatusCreated)
-		response, _ := json.Marshal([]SandboxAllocationUnit{sandboxAllocationUnitResponse})
+		writer.WriteHeader(http.StatusOK)
+		response, _ := json.Marshal(sandboxAllocationUnitResponsePagination)
 		_, _ = fmt.Fprint(writer, string(response))
 	}))
 	defer ts.Close()
@@ -241,8 +260,8 @@ func TestCreateSandboxAllocationUnitAwaitSuccessful(t *testing.T) {
 		if counter == 1 {
 			assertSandboxAllocationUnitCreate(t, request)
 
-			writer.WriteHeader(http.StatusCreated)
-			response, _ := json.Marshal([]SandboxAllocationUnit{sandboxAllocationUnitResponse})
+			writer.WriteHeader(http.StatusOK)
+			response, _ := json.Marshal(sandboxAllocationUnitResponsePagination)
 			_, _ = fmt.Fprint(writer, string(response))
 			return
 		}
@@ -278,8 +297,8 @@ func TestCreateSandboxAllocationUnitAwaitSuccessfulWithDelay(t *testing.T) {
 		if counter == 1 {
 			assertSandboxAllocationUnitCreate(t, request)
 
-			writer.WriteHeader(http.StatusCreated)
-			response, _ := json.Marshal([]SandboxAllocationUnit{sandboxAllocationUnitResponse})
+			writer.WriteHeader(http.StatusOK)
+			response, _ := json.Marshal(sandboxAllocationUnitResponsePagination)
 			_, _ = fmt.Fprint(writer, string(response))
 			return
 		}
