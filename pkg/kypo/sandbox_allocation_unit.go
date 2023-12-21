@@ -143,24 +143,14 @@ func (c *Client) CreateSandboxAllocationUnitAwait(ctx context.Context, poolId in
 }
 
 // CreateSandboxCleanupRequest starts a cleanup request for the specified sandbox allocation unit.
-func (c *Client) CreateSandboxCleanupRequest(ctx context.Context, unitId int64) (*SandboxRequest, error) {
+func (c *Client) CreateSandboxCleanupRequest(ctx context.Context, unitId int64) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/kypo-sandbox-service/api/v1/sandbox-allocation-units/%d/cleanup-request", c.Endpoint, unitId), nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox cleanup request", fmt.Sprintf("sandbox allocation unit %d", unitId))
-	if err != nil {
-		return nil, err
-	}
-
-	sandboxRequest := SandboxRequest{}
-	err = json.Unmarshal(body, &sandboxRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	return &sandboxRequest, nil
+	_, _, err = c.doRequestWithRetry(req, http.StatusCreated, "sandbox cleanup request", fmt.Sprintf("sandbox allocation unit %d", unitId))
+	return err
 }
 
 // PollRequestFinished periodically checks whether the specified request on given allocation unit has finished.
@@ -206,7 +196,7 @@ func (c *Client) PollRequestFinished(ctx context.Context, unitId int64, pollTime
 // CreateSandboxCleanupRequestAwait starts the cleanup request for the given sandbox allocation unit and waits until it finishes.
 // Once the cleanup is started, the status is checked once every `pollTime` elapses.
 func (c *Client) CreateSandboxCleanupRequestAwait(ctx context.Context, unitId int64, pollTime time.Duration) error {
-	_, err := c.CreateSandboxCleanupRequest(ctx, unitId)
+	err := c.CreateSandboxCleanupRequest(ctx, unitId)
 	if err != nil {
 		return err
 	}

@@ -349,29 +349,14 @@ func TestCleanupSandboxAllocationUnitSuccessful(t *testing.T) {
 		assertSandboxAllocationUnitCleanup(t, request)
 
 		writer.WriteHeader(http.StatusCreated)
-		r := SandboxAllocationRequest{
-			Id:               1,
-			AllocationUnitId: 1,
-			Created:          "2023-11-26T17:04:20.032500+01:00",
-			Stages:           []string{"IN_QUEUE", "IN_QUEUE", "IN_QUEUE"},
-		}
-		response, _ := json.Marshal(r)
-		_, _ = fmt.Fprint(writer, string(response))
 	}))
 	defer ts.Close()
 
 	c := minimalClient(ts)
 
-	actual, err := c.CreateSandboxCleanupRequest(context.Background(), 1)
-	expected := kypo.SandboxRequest{
-		Id:               1,
-		AllocationUnitId: 1,
-		Created:          "2023-11-26T17:04:20.032500+01:00",
-		Stages:           []string{"IN_QUEUE", "IN_QUEUE", "IN_QUEUE"},
-	}
+	err := c.CreateSandboxCleanupRequest(context.Background(), 1)
 
 	assert.NoError(t, err)
-	assert.Equal(t, &expected, actual)
 }
 
 func TestCleanupSandboxAllocationUnitNotFound(t *testing.T) {
@@ -396,9 +381,8 @@ func TestCleanupSandboxAllocationUnitNotFound(t *testing.T) {
 		Err:          kypo.ErrNotFound,
 	}
 
-	actual, err := c.CreateSandboxCleanupRequest(context.Background(), 1)
+	err := c.CreateSandboxCleanupRequest(context.Background(), 1)
 
-	assert.Nil(t, actual)
 	assert.Equal(t, expected, err)
 }
 
@@ -416,9 +400,8 @@ func TestCleanupSandboxAllocationUnitServerError(t *testing.T) {
 		Identifier:   "sandbox allocation unit 1",
 		Err:          fmt.Errorf("status: 500, body: "),
 	}
-	actual, err := c.CreateSandboxCleanupRequest(context.Background(), 1)
+	err := c.CreateSandboxCleanupRequest(context.Background(), 1)
 
-	assert.Nil(t, actual)
 	assert.Equal(t, expected, err)
 }
 
@@ -430,14 +413,6 @@ func TestCleanupSandboxAllocationUnitAwaitSuccessful(t *testing.T) {
 			assertSandboxAllocationUnitCleanup(t, request)
 
 			writer.WriteHeader(http.StatusCreated)
-			r := SandboxAllocationRequest{
-				Id:               1,
-				AllocationUnitId: 1,
-				Created:          "2023-11-26T17:04:20.032500+01:00",
-				Stages:           []string{"IN_QUEUE", "IN_QUEUE", "IN_QUEUE"},
-			}
-			response, _ := json.Marshal(r)
-			_, _ = fmt.Fprint(writer, string(response))
 			return
 		}
 
@@ -475,8 +450,6 @@ func TestCleanupSandboxAllocationUnitAwaitSuccessfulWithDelay(t *testing.T) {
 			assertSandboxAllocationUnitCleanup(t, request)
 
 			writer.WriteHeader(http.StatusCreated)
-			response, _ := json.Marshal(r)
-			_, _ = fmt.Fprint(writer, string(response))
 			return
 		}
 
@@ -512,14 +485,6 @@ func TestCleanupSandboxAllocationUnitAwaitFailed(t *testing.T) {
 			assertSandboxAllocationUnitCleanup(t, request)
 
 			writer.WriteHeader(http.StatusCreated)
-			r := SandboxAllocationRequest{
-				Id:               1,
-				AllocationUnitId: 1,
-				Created:          "2023-11-26T17:04:20.032500+01:00",
-				Stages:           []string{"IN_QUEUE", "IN_QUEUE", "IN_QUEUE"},
-			}
-			response, _ := json.Marshal(r)
-			_, _ = fmt.Fprint(writer, string(response))
 			return
 		}
 
