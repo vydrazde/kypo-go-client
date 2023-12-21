@@ -29,6 +29,15 @@ type SandboxRequest struct {
 	Stages           []string `json:"stages" tfsdk:"stages"`
 }
 
+type Pagination[T any] struct {
+	Page       int64 `json:"page" tfsdk:"page"`
+	PageSize   int64 `json:"page_size" tfsdk:"page_size"`
+	PageCount  int64 `json:"page_count" tfsdk:"page_count"`
+	Count      int64 `json:"count" tfsdk:"line_count"`
+	TotalCount int64 `json:"total_count" tfsdk:"total_count"`
+	Results    T     `json:"results" tfsdk:"results"`
+}
+
 type SandboxRequestStageOutput struct {
 	Page       int64  `json:"page" tfsdk:"page"`
 	PageSize   int64  `json:"page_size" tfsdk:"page_size"`
@@ -36,15 +45,6 @@ type SandboxRequestStageOutput struct {
 	Count      int64  `json:"count" tfsdk:"line_count"`
 	TotalCount int64  `json:"total_count" tfsdk:"total_count"`
 	Result     string `json:"result" tfsdk:"result"`
-}
-
-type sandboxRequestStageOutputRaw struct {
-	Page       int64        `json:"page"`
-	PageSize   int64        `json:"page_size"`
-	PageCount  int64        `json:"page_count"`
-	Count      int64        `json:"count"`
-	TotalCount int64        `json:"total_count"`
-	Results    []outputLine `json:"results"`
 }
 
 type outputLine struct {
@@ -80,18 +80,43 @@ func (c *Client) CreateSandboxAllocationUnits(ctx context.Context, poolId, count
 		return nil, err
 	}
 
-	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox allocation units", fmt.Sprintf("sandbox pool %d", poolId))
+	body, _, err := c.doRequestWithRetry(req, http.StatusOK, "sandbox allocation units", fmt.Sprintf("sandbox pool %d", poolId))
 	if err != nil {
 		return nil, err
 	}
 
-	var allocationUnit []SandboxAllocationUnit
+	var allocationUnit Pagination[[]SandboxAllocationUnit]
 	err = json.Unmarshal(body, &allocationUnit)
 	if err != nil {
 		return nil, err
 	}
 
-	return allocationUnit, nil
+	return allocationUnit.Results, nil
+}
+
+func (c *Client) AwaitAllocationRequestCreate(ctx context.Context, requestId int64, pollTime time.Duration) error {
+	ticker := time.NewTicker(pollTime)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/kypo-sandbox-service/api/v1/sandbox-allocation-units/%d/allocation-request", c.Endpoint, requestId), nil)
+			if err != nil {
+				return err
+			}
+
+			_, status, err := c.doRequest(req)
+			if err != nil {
+				return err
+			}
+
+			if status != http.StatusNotFound {
+				return nil
+			}
+		}
+	}
 }
 
 // CreateSandboxAllocationUnitAwait creates a single sandbox allocation unit and waits until its allocation finishes.
@@ -105,6 +130,10 @@ func (c *Client) CreateSandboxAllocationUnitAwait(ctx context.Context, poolId in
 		return nil, fmt.Errorf("expected one allocation unit to be created, got %d instead", len(units))
 	}
 	unit := units[0]
+	err = c.AwaitAllocationRequestCreate(ctx, unit.Id, pollTime)
+	if err != nil {
+		return nil, err
+	}
 	request, err := c.PollRequestFinished(ctx, unit.Id, pollTime, "allocation")
 	if err != nil {
 		return nil, err
@@ -114,24 +143,14 @@ func (c *Client) CreateSandboxAllocationUnitAwait(ctx context.Context, poolId in
 }
 
 // CreateSandboxCleanupRequest starts a cleanup request for the specified sandbox allocation unit.
-func (c *Client) CreateSandboxCleanupRequest(ctx context.Context, unitId int64) (*SandboxRequest, error) {
+func (c *Client) CreateSandboxCleanupRequest(ctx context.Context, unitId int64) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/kypo-sandbox-service/api/v1/sandbox-allocation-units/%d/cleanup-request", c.Endpoint, unitId), nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	body, _, err := c.doRequestWithRetry(req, http.StatusCreated, "sandbox cleanup request", fmt.Sprintf("sandbox allocation unit %d", unitId))
-	if err != nil {
-		return nil, err
-	}
-
-	sandboxRequest := SandboxRequest{}
-	err = json.Unmarshal(body, &sandboxRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	return &sandboxRequest, nil
+	_, _, err = c.doRequestWithRetry(req, http.StatusCreated, "sandbox cleanup request", fmt.Sprintf("sandbox allocation unit %d", unitId))
+	return err
 }
 
 // PollRequestFinished periodically checks whether the specified request on given allocation unit has finished.
@@ -177,7 +196,7 @@ func (c *Client) PollRequestFinished(ctx context.Context, unitId int64, pollTime
 // CreateSandboxCleanupRequestAwait starts the cleanup request for the given sandbox allocation unit and waits until it finishes.
 // Once the cleanup is started, the status is checked once every `pollTime` elapses.
 func (c *Client) CreateSandboxCleanupRequestAwait(ctx context.Context, unitId int64, pollTime time.Duration) error {
-	_, err := c.CreateSandboxCleanupRequest(ctx, unitId)
+	err := c.CreateSandboxCleanupRequest(ctx, unitId)
 	if err != nil {
 		return err
 	}
@@ -227,7 +246,7 @@ func (c *Client) GetSandboxRequestAnsibleOutputs(ctx context.Context, sandboxReq
 		return nil, err
 	}
 
-	outputRaw := sandboxRequestStageOutputRaw{}
+	outputRaw := Pagination[[]outputLine]{}
 
 	err = json.Unmarshal(body, &outputRaw)
 	if err != nil {
